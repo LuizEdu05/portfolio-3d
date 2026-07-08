@@ -119,10 +119,32 @@ function InteractButton() {
         e.stopPropagation();
         openProject(nearbyProjectId);
       }}
-      className="pointer-events-auto absolute bottom-14 right-10 h-16 w-16 rounded-full border border-white/30 bg-white/15 text-sm font-medium text-white active:bg-white/30"
+      className="pointer-events-auto absolute bottom-36 right-10 h-16 w-16 rounded-full border border-white/30 bg-white/15 text-sm font-medium text-white active:bg-white/30"
       style={{ touchAction: "none" }}
     >
       Abrir
+    </button>
+  );
+}
+
+function JumpButton() {
+  return (
+    <button
+      onTouchStart={(e) => {
+        e.stopPropagation();
+        touchInput.jump = true;
+      }}
+      onTouchEnd={(e) => {
+        e.stopPropagation();
+        touchInput.jump = false;
+      }}
+      onTouchCancel={() => {
+        touchInput.jump = false;
+      }}
+      className="pointer-events-auto absolute bottom-10 right-10 h-20 w-20 rounded-full border border-white/30 bg-white/10 text-sm font-medium text-white active:bg-white/25"
+      style={{ touchAction: "none" }}
+    >
+      Pular
     </button>
   );
 }
@@ -132,6 +154,7 @@ export function TouchControls() {
     <div className="pointer-events-none absolute inset-0">
       <TouchLookLayer />
       <TouchJoystick />
+      <JumpButton />
       <InteractButton />
     </div>
   );

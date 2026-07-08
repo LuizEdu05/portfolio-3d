@@ -6,6 +6,7 @@ import { PointerLockControls } from "@react-three/drei";
 import {
   RigidBody,
   CapsuleCollider,
+  useRapier,
   type RapierRigidBody,
 } from "@react-three/rapier";
 import * as THREE from "three";
@@ -21,16 +22,23 @@ const MAX_PITCH = Math.PI / 2 - 0.05;
 const MOVE_SPEED = 5;
 const SPRINT_SPEED = 8;
 const ACCEL = 14;
+const AIR_ACCEL = 3;
 const EYE_HEIGHT = 1.6;
 const PROXIMITY_RADIUS = 3.5;
 const BASE_FOV = 75;
 const SPRINT_FOV = 82;
 const BOB_FREQ = 9;
 const BOB_AMOUNT = 0.045;
+const CAPSULE_HALF_HEIGHT = 0.5;
+const CAPSULE_RADIUS = 0.4;
+const CAPSULE_BOTTOM = CAPSULE_HALF_HEIGHT + CAPSULE_RADIUS;
+const GROUND_MARGIN = 0.15;
+const JUMP_SPEED = 7.5;
 
 export function Player() {
   const bodyRef = useRef<RapierRigidBody>(null);
   const { camera } = useThree();
+  const { world, rapier } = useRapier();
   const keys = useKeyboard();
   const isTouch = useIsTouch();
   const setLocked = useExperienceStore((s) => s.setLocked);
@@ -95,17 +103,30 @@ export function Player() {
       move.normalize().multiplyScalar(speed * magnitude);
     }
 
+    const groundHit = world.castRay(
+      new rapier.Ray(t, { x: 0, y: -1, z: 0 }),
+      CAPSULE_BOTTOM + GROUND_MARGIN,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      body
+    );
+    const grounded = groundHit !== null && groundHit.timeOfImpact <= CAPSULE_BOTTOM + GROUND_MARGIN;
+
     const currentVel = body.linvel();
-    const damp = 1 - Math.exp(-ACCEL * delta);
+    const damp = 1 - Math.exp(-(grounded ? ACCEL : AIR_ACCEL) * delta);
     const nextX = THREE.MathUtils.lerp(currentVel.x, move.x, damp);
     const nextZ = THREE.MathUtils.lerp(currentVel.z, move.z, damp);
-    body.setLinvel({ x: nextX, y: currentVel.y, z: nextZ }, true);
+    const jumpPressed = keys.current.Space || (isTouch && touchInput.jump);
+    const nextY = grounded && jumpPressed ? JUMP_SPEED : currentVel.y;
+    body.setLinvel({ x: nextX, y: nextY, z: nextZ }, true);
 
     const planarSpeed = Math.hypot(nextX, nextZ);
-    if (moving && planarSpeed > 0.1) {
+    if (moving && grounded && planarSpeed > 0.1) {
       bobTime.current += delta * BOB_FREQ * (sprinting ? 1.4 : 1);
     }
-    const bob = moving ? Math.sin(bobTime.current) * BOB_AMOUNT * Math.min(planarSpeed / speed, 1) : 0;
+    const bob = moving && grounded ? Math.sin(bobTime.current) * BOB_AMOUNT * Math.min(planarSpeed / speed, 1) : 0;
     camera.position.set(t.x, t.y + EYE_HEIGHT + bob, t.z);
 
     const targetFov = sprinting && moving ? SPRINT_FOV : BASE_FOV;

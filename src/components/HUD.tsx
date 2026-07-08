@@ -31,8 +31,8 @@ export function HUD() {
         <h1 className="text-3xl font-semibold tracking-tight">Portfólio 3D</h1>
         <p className="max-w-sm text-sm text-zinc-300">
           {isTouch
-            ? "Toque para entrar. Arraste a tela para olhar em volta, use o manche pra mover e toque em Abrir perto de um projeto."
-            : "Clique para entrar. WASD para mover, mouse para olhar em volta, E para abrir um projeto."}
+            ? "Toque para entrar. Arraste a tela para olhar em volta, use o manche pra mover, segure Pular pra ficar quicando e toque em Abrir perto de um projeto."
+            : "Clique para entrar. WASD para mover, mouse para olhar em volta, Espaço pra pular (segura pra ficar quicando tipo bhop), E para abrir um projeto."}
         </p>
         <span className="rounded-full bg-white px-5 py-2 text-sm font-medium text-black">
           {isTouch ? "Toque para começar" : "Clique para começar"}
