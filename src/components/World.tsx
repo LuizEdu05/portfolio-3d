@@ -9,6 +9,62 @@ import * as THREE from "three";
 const ARENA_SIZE = 24;
 const WALL_HEIGHT = 6;
 const DUST_COUNT = 200;
+const GALAXY_COUNT = 2200;
+const GALAXY_RADIUS = 70;
+
+function Galaxy() {
+  const pointsRef = useRef<THREE.Points>(null);
+  const [positions, colors, sizes] = useMemo(() => {
+    const pos = new Float32Array(GALAXY_COUNT * 3);
+    const col = new Float32Array(GALAXY_COUNT * 3);
+    const siz = new Float32Array(GALAXY_COUNT);
+    const white = new THREE.Color("#f2f2f5");
+    const gray = new THREE.Color("#8c8c96");
+    const yellow = new THREE.Color("#ffd166");
+
+    for (let i = 0; i < GALAXY_COUNT; i++) {
+      const r = GALAXY_RADIUS * (0.65 + Math.random() * 0.35);
+      const theta = Math.acos(1 - 2 * Math.random());
+      const phi = Math.random() * Math.PI * 2;
+      pos[i * 3] = r * Math.sin(theta) * Math.cos(phi);
+      pos[i * 3 + 1] = Math.abs(r * Math.cos(theta)) + 4;
+      pos[i * 3 + 2] = r * Math.sin(theta) * Math.sin(phi);
+
+      const roll = Math.random();
+      const c = roll < 0.1 ? yellow : roll < 0.55 ? gray : white;
+      col[i * 3] = c.r;
+      col[i * 3 + 1] = c.g;
+      col[i * 3 + 2] = c.b;
+
+      siz[i] = 0.4 + Math.random() * 1.1;
+    }
+    return [pos, col, siz];
+  }, []);
+
+  useFrame((state) => {
+    if (!pointsRef.current) return;
+    pointsRef.current.rotation.y = state.clock.elapsedTime * 0.004;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
+        <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
+      </bufferGeometry>
+      <pointsMaterial
+        vertexColors
+        size={0.5}
+        transparent
+        opacity={0.85}
+        sizeAttenuation
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
 
 function Dust() {
   const pointsRef = useRef<THREE.Points>(null);
@@ -48,6 +104,8 @@ function Dust() {
 export function World() {
   return (
     <>
+      <color attach="background" args={["#07070a"]} />
+      <Galaxy />
       <Dust />
       <hemisphereLight args={["#6a8cff", "#1a1a1f", 0.6]} />
       <ambientLight intensity={0.25} />
