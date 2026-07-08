@@ -11,6 +11,58 @@ const WALL_HEIGHT = 6;
 const DUST_COUNT = 200;
 const GALAXY_COUNT = 2200;
 const GALAXY_RADIUS = 70;
+const WAVE_COUNT_X = 30;
+const WAVE_COUNT_Z = 30;
+const WAVE_SPACING = 9;
+
+function DottedWave() {
+  const pointsRef = useRef<THREE.Points>(null);
+  const positions = useMemo(() => {
+    const arr = new Float32Array(WAVE_COUNT_X * WAVE_COUNT_Z * 3);
+    let i = 0;
+    for (let ix = 0; ix < WAVE_COUNT_X; ix++) {
+      for (let iz = 0; iz < WAVE_COUNT_Z; iz++) {
+        arr[i * 3] = ix * WAVE_SPACING - (WAVE_COUNT_X * WAVE_SPACING) / 2;
+        arr[i * 3 + 1] = -0.05;
+        arr[i * 3 + 2] = iz * WAVE_SPACING - (WAVE_COUNT_Z * WAVE_SPACING) / 2;
+        i++;
+      }
+    }
+    return arr;
+  }, []);
+
+  useFrame((state) => {
+    if (!pointsRef.current) return;
+    const pos = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;
+    const arr = pos.array as Float32Array;
+    const t = state.clock.elapsedTime;
+    let i = 0;
+    for (let ix = 0; ix < WAVE_COUNT_X; ix++) {
+      for (let iz = 0; iz < WAVE_COUNT_Z; iz++) {
+        arr[i * 3 + 1] =
+          -0.05 + Math.sin(ix * 0.3 + t * 0.6) * 0.35 + Math.sin(iz * 0.3 + t * 0.5) * 0.35;
+        i++;
+      }
+    }
+    pos.needsUpdate = true;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.12}
+        color="#7d8590"
+        transparent
+        opacity={0.55}
+        sizeAttenuation
+        depthWrite={false}
+      />
+    </points>
+  );
+}
 
 function Galaxy() {
   const pointsRef = useRef<THREE.Points>(null);
@@ -107,6 +159,7 @@ export function World() {
       <color attach="background" args={["#07070a"]} />
       <Galaxy />
       <Dust />
+      <DottedWave />
       <hemisphereLight args={["#6a8cff", "#1a1a1f", 0.6]} />
       <ambientLight intensity={0.25} />
       <directionalLight position={[10, 12, 6]} intensity={1.2} />
