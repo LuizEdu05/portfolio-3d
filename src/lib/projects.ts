@@ -22,11 +22,11 @@ export const projects: Project[] = [
   },
   {
     id: "project-2",
-    title: "Projeto Dois",
-    description: "Descreva aqui o problema, sua solução e o impacto.",
-    stack: ["React", "Node.js", "Redis"],
-    demoUrl: "https://example.com",
-    repoUrl: "https://github.com/",
+    title: "Clima Agora",
+    description:
+      "Previsão do tempo em tempo real para cidades brasileiras: comparação entre localidades, alertas de chuva e exportação em PDF.",
+    stack: ["Next.js", "Vercel", "Weather API"],
+    demoUrl: "https://weatherweb-five.vercel.app/",
     position: [6, 0, -4],
     color: "#ff6b6b",
   },
