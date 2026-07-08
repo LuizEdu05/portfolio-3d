@@ -10,8 +10,13 @@ import {
 } from "@react-three/rapier";
 import * as THREE from "three";
 import { useKeyboard } from "@/hooks/useKeyboard";
+import { useIsTouch } from "@/hooks/useIsTouch";
 import { useExperienceStore } from "@/store/useExperienceStore";
 import { projects } from "@/lib/projects";
+import { touchInput } from "@/lib/touchInput";
+
+const LOOK_SENSITIVITY = 0.0028;
+const MAX_PITCH = Math.PI / 2 - 0.05;
 
 const MOVE_SPEED = 5;
 const SPRINT_SPEED = 8;
@@ -27,6 +32,7 @@ export function Player() {
   const bodyRef = useRef<RapierRigidBody>(null);
   const { camera } = useThree();
   const keys = useKeyboard();
+  const isTouch = useIsTouch();
   const setLocked = useExperienceStore((s) => s.setLocked);
   const setNearbyProjectId = useExperienceStore((s) => s.setNearbyProjectId);
   const activeProjectId = useExperienceStore((s) => s.activeProjectId);
@@ -37,6 +43,8 @@ export function Player() {
   const wasPressingE = useRef(false);
   const bobTime = useRef(0);
   const currentFov = useRef(BASE_FOV);
+  const yaw = useRef(0);
+  const pitch = useRef(0);
 
   useFrame((_, delta) => {
     const body = bodyRef.current;
@@ -48,6 +56,19 @@ export function Player() {
       body.setLinvel({ x: 0, y: 0, z: 0 }, true);
       camera.position.set(t.x, t.y + EYE_HEIGHT, t.z);
       return;
+    }
+
+    if (isTouch) {
+      yaw.current -= touchInput.look.x * LOOK_SENSITIVITY;
+      pitch.current = THREE.MathUtils.clamp(
+        pitch.current - touchInput.look.y * LOOK_SENSITIVITY,
+        -MAX_PITCH,
+        MAX_PITCH
+      );
+      touchInput.look.x = 0;
+      touchInput.look.y = 0;
+      camera.rotation.order = "YXZ";
+      camera.rotation.set(pitch.current, yaw.current, 0);
     }
 
     camera.getWorldDirection(forward.current);
@@ -63,10 +84,15 @@ export function Player() {
     if (keys.current.KeyS) move.sub(forward.current);
     if (keys.current.KeyD) move.add(right.current);
     if (keys.current.KeyA) move.sub(right.current);
+    if (isTouch) {
+      move.addScaledVector(forward.current, -touchInput.move.y);
+      move.addScaledVector(right.current, touchInput.move.x);
+    }
 
-    const moving = move.lengthSq() > 0;
+    const moving = move.lengthSq() > 0.0001;
     if (moving) {
-      move.normalize().multiplyScalar(speed);
+      const magnitude = Math.min(move.length(), 1);
+      move.normalize().multiplyScalar(speed * magnitude);
     }
 
     const currentVel = body.linvel();
@@ -108,10 +134,12 @@ export function Player() {
 
   return (
     <>
-      <PointerLockControls
-        onLock={() => setLocked(true)}
-        onUnlock={() => setLocked(false)}
-      />
+      {!isTouch && (
+        <PointerLockControls
+          onLock={() => setLocked(true)}
+          onUnlock={() => setLocked(false)}
+        />
+      )}
       <RigidBody
         ref={bodyRef}
         colliders={false}
